@@ -5,6 +5,7 @@ export interface KaraokeVideo {
   durationSeconds: number;
   thumbnailUrl: string;
   channelTitle?: string;
+  categoryId?: string;
 }
 
 export interface SearchParams {

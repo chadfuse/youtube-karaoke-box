@@ -28,7 +28,7 @@ async function fetchVideoDetails(apiKey: string, ids: string[]): Promise<Record<
   type Resp = {
     items: Array<{
       id: string;
-      snippet: { title: string; description?: string; thumbnails?: any; channelTitle?: string };
+      snippet: { title: string; description?: string; thumbnails?: any; channelTitle?: string; categoryId?: string };
       contentDetails: { duration: string };
     }>
   };
@@ -44,6 +44,7 @@ async function fetchVideoDetails(apiKey: string, ids: string[]): Promise<Record<
       durationSeconds,
       thumbnailUrl: thumb,
       channelTitle: it.snippet.channelTitle,
+      categoryId: it.snippet.categoryId,
     };
   }
   return out;
@@ -74,8 +75,9 @@ export async function searchKaraoke({ apiKey, q, maxResults = 25, regionCode = "
 }
 
 export async function getTrendingKaraoke({ apiKey, maxResults = 12, regionCode = "US" }: TrendingParams): Promise<KaraokeVideo[]> {
-  // Approximate "trending" by using viewCount order on karaoke query
-  const url = `${YT_API_BASE}/search?part=snippet&type=video&videoEmbeddable=true&maxResults=${maxResults}&order=viewCount&regionCode=${encodeURIComponent(regionCode)}&q=karaoke&key=${encodeURIComponent(apiKey)}`;
+  // Improved "trending": fetch more, then filter to real karaoke tracks
+  const fetchCount = Math.min(50, Math.max(maxResults * 4, maxResults));
+  const url = `${YT_API_BASE}/search?part=snippet&type=video&videoEmbeddable=true&maxResults=${fetchCount}&order=viewCount&regionCode=${encodeURIComponent(regionCode)}&q=karaoke&key=${encodeURIComponent(apiKey)}`;
   type Resp = {
     items: Array<{
       id: { videoId: string };
@@ -94,5 +96,17 @@ export async function getTrendingKaraoke({ apiKey, maxResults = 12, regionCode =
     .map((it) => it.id.videoId);
 
   const details = await fetchVideoDetails(apiKey, ids);
-  return ids.map((id) => details[id]).filter(Boolean);
+  const banned = /(challenge|#shorts|shorts|pov|vlog|prank|episode|ranking|react|compilation|funny)/i;
+
+  return ids
+    .map((id) => details[id])
+    .filter(Boolean)
+    .filter((v) => v.durationSeconds >= 120 && v.durationSeconds <= 600)
+    .filter((v) => (v.categoryId || "") === "10")
+    .filter((v) => {
+      const t = (v.title || "").toLowerCase();
+      const d = (v.description || "").toLowerCase();
+      return !banned.test(t) && !banned.test(d);
+    })
+    .slice(0, maxResults);
 }
