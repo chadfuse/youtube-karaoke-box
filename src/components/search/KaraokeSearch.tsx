@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,22 +28,6 @@ export default function KaraokeSearch() {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    const term = q.trim();
-    if (!settings.apiKey) return;
-    if (term.length === 0) {
-      setResults(null);
-      setError(null);
-      setLoading(false);
-      return;
-    }
-    if (term.length < 3) return;
-    const id = setTimeout(() => {
-      onSearch();
-    }, 400);
-    return () => clearTimeout(id);
-  }, [q, settings.apiKey, settings.regionCode]);
 
   return (
     <Card>
