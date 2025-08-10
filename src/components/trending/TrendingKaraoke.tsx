@@ -8,7 +8,7 @@ import { KaraokeVideo } from "@/types/youtube";
 const formatDuration = (s: number) => `${Math.floor(s/60)}:${(s%60).toString().padStart(2, "0")}`;
 
 export default function TrendingKaraoke() {
-  const { settings, reserve } = useKaraoke();
+  const { settings, reserve, nowPlaying, queue, setInitial } = useKaraoke();
   const [items, setItems] = useState<KaraokeVideo[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,6 +21,9 @@ export default function TrendingKaraoke() {
         setError(null);
         const data = await getTrendingKaraoke({ apiKey: settings.apiKey, regionCode: settings.regionCode, maxResults: 12 });
         setItems(data);
+        if (!nowPlaying && queue.length === 0 && data.length > 0) {
+          setInitial(data[0]);
+        }
       } catch (e: any) {
         setError(e.message || "Failed to load trending");
       } finally {

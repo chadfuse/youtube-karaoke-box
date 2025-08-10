@@ -32,6 +32,7 @@ interface KaraokeActions {
   skip: () => void;
   setSettings: (next: Partial<KaraokeSettings>) => void;
   setMicrophoneMuted: (muted: boolean) => void;
+  setInitial: (song: KaraokeVideo) => void;
 }
 
 const DEFAULT_SETTINGS: KaraokeSettings = {
@@ -110,9 +111,15 @@ export const KaraokeProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
   };
 
-  const setSettings: KaraokeActions["setSettings"] = (next) => {
-    setSettingsState((prev) => ({ ...prev, ...next }));
-  };
+const setSettings: KaraokeActions["setSettings"] = (next) => {
+  setSettingsState((prev) => ({ ...prev, ...next }));
+};
+
+const setInitial: KaraokeActions["setInitial"] = (song) => {
+  if (nowPlaying || queue.length > 0) return;
+  setNowPlaying({ ...song });
+  setIsPlaying(true);
+};
 
   const value = useMemo(() => ({
     nowPlaying,
@@ -128,6 +135,7 @@ export const KaraokeProvider: React.FC<{ children: React.ReactNode }> = ({ child
     togglePlay,
     skip,
     setSettings,
+    setInitial,
     setMicrophoneMuted,
   }), [nowPlaying, queue, isPlaying, microphoneMuted, settings]);
 
