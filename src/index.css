@@ -36,7 +36,7 @@ All colors MUST be HSL.
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
 
-    --radius: 0.5rem;
+--radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
 
@@ -53,6 +53,11 @@ All colors MUST be HSL.
     --sidebar-border: 220 13% 91%;
 
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Brand tokens and gradients */
+    --brand-1: 278 77% 58%; /* violet */
+    --brand-2: 318 86% 55%; /* fuchsia */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--brand-1)), hsl(var(--brand-2)));
   }
 
   .dark {
@@ -90,7 +95,12 @@ All colors MUST be HSL.
     --sidebar-accent: 240 3.7% 15.9%;
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+--sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Brand tokens and gradients tuned for dark */
+    --brand-1: 275 87% 66%;
+    --brand-2: 315 86% 62%;
+    --gradient-primary: linear-gradient(135deg, hsl(var(--brand-1)), hsl(var(--brand-2)));
   }
 }
 
@@ -101,5 +111,11 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .btn-gradient {
+    background-image: var(--gradient-primary);
   }
 }

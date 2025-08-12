@@ -61,7 +61,19 @@ export const KaraokeProvider: React.FC<{ children: React.ReactNode }> = ({ child
     localStorage.setItem("karaoke_region", settings.regionCode);
   }, [settings]);
 
-  const reserve: KaraokeActions["reserve"] = (song, reserver) => {
+const reserve: KaraokeActions["reserve"] = (song, reserver) => {
+    // Enforce anonymous reserve limit (5) until auth is connected
+    const loggedIn = !!localStorage.getItem("karaoke_user_logged_in");
+    if (!loggedIn) {
+      const count = parseInt(localStorage.getItem("karaoke_anon_reserve_count") || "0", 10);
+      if (count >= 5) {
+        toast({ title: "Limit reached", description: "Sign in to reserve unlimited songs." });
+        return;
+      } else {
+        localStorage.setItem("karaoke_anon_reserve_count", String(count + 1));
+      }
+    }
+
     const candidate: KaraokeSong = { ...song, reserver };
     if (!settings.allowDuplicates) {
       const duplicate = (nowPlaying && nowPlaying.id === candidate.id) || queue.some((s) => s.id === candidate.id);

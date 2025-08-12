@@ -3,7 +3,7 @@ import YouTube from "react-youtube";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useKaraoke } from "@/state/karaokeStore";
-import { Maximize2, Minimize2, Pause, Play, SkipForward, Mic, MicOff, Eye, EyeOff } from "lucide-react";
+import { Maximize2, Minimize2, Pause, Play, SkipForward, Mic, MicOff } from "lucide-react";
 
 const formatTime = (s: number) => {
   const m = Math.floor(s / 60);
@@ -16,7 +16,9 @@ export default function KaraokePlayer() {
   const [countdown, setCountdown] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<any>(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showControls, setShowControls] = useState(true);
+  const hideTimer = useRef<number | null>(null);
 
   useEffect(() => {
     const handler = () => setIsFullscreen(!!document.fullscreenElement);
@@ -75,7 +77,7 @@ export default function KaraokePlayer() {
     else await document.exitFullscreen();
   };
 
-  return (
+return (
     <section aria-label="Now Playing" className="mb-6">
       <Card className="overflow-hidden">
         <CardHeader>
@@ -90,15 +92,28 @@ export default function KaraokePlayer() {
               <p className="text-muted-foreground">Reserve a song to start</p>
             </div>
           ) : (
-            <div ref={containerRef} className="relative">
+            <div
+              ref={containerRef}
+              className="relative"
+              onMouseMove={() => {
+                setShowControls(true);
+                if (hideTimer.current) window.clearTimeout(hideTimer.current);
+                hideTimer.current = window.setTimeout(() => setShowControls(false), 7000);
+              }}
+              onTouchStart={() => {
+                setShowControls(true);
+                if (hideTimer.current) window.clearTimeout(hideTimer.current);
+                hideTimer.current = window.setTimeout(() => setShowControls(false), 7000);
+              }}
+            >
               <YouTube videoId={nowPlaying.id} opts={opts} onReady={onReady} onEnd={onEnd} key={nowPlaying.id} />
 
-              {settings.showOverlay && (
+{settings.showOverlay && showControls && (
                 <div className="absolute left-3 right-3 bottom-3 md:left-6 md:right-6 md:bottom-6 bg-background/70 backdrop-blur-md border rounded-md p-3 md:p-4 shadow">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                     <div>
                       <div className="font-semibold line-clamp-2">{nowPlaying.title}</div>
-                      <div className="text-sm text-muted-foreground">{nowPlaying.reserver ? `Reserved by ${nowPlaying.reserver}` : "Unreserved"}</div>
+                      <div className="text-sm text-muted-foreground">Unreserved</div>
                     </div>
                     <div className="flex items-center gap-2">
                       <Button size="sm" onClick={togglePlay} variant="secondary" aria-label={isPlaying ? "Pause" : "Play"}>
@@ -109,9 +124,6 @@ export default function KaraokePlayer() {
                       </Button>
                       <Button size="sm" onClick={() => setMicrophoneMuted(!microphoneMuted)} variant="secondary" aria-label={microphoneMuted ? "Unmute mic" : "Mute mic"}>
                         {microphoneMuted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-                      </Button>
-                      <Button size="sm" onClick={() => setSettings({ showOverlay: !settings.showOverlay })} variant="secondary" aria-label="Toggle overlay">
-                        {settings.showOverlay ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                       </Button>
                       <Button size="sm" onClick={toggleFullscreen} variant="secondary" aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}>
                         {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}

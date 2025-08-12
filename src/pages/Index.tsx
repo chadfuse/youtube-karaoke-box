@@ -6,35 +6,38 @@ import ReserveQueue from "@/components/queue/ReserveQueue";
 import SettingsDialog from "@/components/SettingsDialog";
 
 const Index = () => {
-  useEffect(() => {
-    document.title = "YouTube Karaoke Box – Sing Along";
-    const desc = "Search, reserve, and sing along with embeddable YouTube karaoke videos.";
-    const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) metaDesc.setAttribute("content", desc);
-    else {
-      const m = document.createElement("meta");
-      m.name = "description";
-      m.content = desc;
-      document.head.appendChild(m);
-    }
-    const link = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
-    const canonical = window.location.href;
-    if (link) link.href = canonical; else {
-      const l = document.createElement("link");
-      l.rel = "canonical";
-      l.href = canonical;
-      document.head.appendChild(l);
-    }
-  }, []);
+useEffect(() => {
+  document.title = "Chado – Karaoke App";
+  const desc = "Chado karaoke app – search, reserve, and sing your favorite songs.";
+  const metaDesc = document.querySelector('meta[name="description"]');
+  if (metaDesc) metaDesc.setAttribute("content", desc);
+  else {
+    const m = document.createElement("meta");
+    m.name = "description";
+    m.content = desc;
+    document.head.appendChild(m);
+  }
+  const link = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+  const canonical = window.location.href;
+  if (link) link.href = canonical; else {
+    const l = document.createElement("link");
+    l.rel = "canonical";
+    l.href = canonical;
+    document.head.appendChild(l);
+  }
+}, []);
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-        <div className="container flex items-center justify-between py-3">
-          <h1 className="text-xl md:text-2xl font-bold">YouTube Karaoke Box</h1>
-          <SettingsDialog />
-        </div>
-      </header>
+<header className="sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+  <div className="container flex items-center justify-between py-3">
+    <h1 className="text-xl md:text-2xl font-bold flex items-center gap-2">
+      <img src="/lovable-uploads/3997c5c5-9313-46e5-90bf-510265840249.png" alt="Chado karaoke logo" className="h-8 w-8 rounded" loading="lazy" />
+      Chado
+    </h1>
+    <SettingsDialog />
+  </div>
+</header>
 
       <main className="container py-4 md:py-6">
         <KaraokePlayer />
