@@ -3,7 +3,7 @@ import YouTube from "react-youtube";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useKaraoke } from "@/state/karaokeStore";
-import { Maximize2, Minimize2, Pause, Play, SkipForward, Mic, MicOff } from "lucide-react";
+import { Maximize2, Minimize2, Pause, Play, SkipForward, Mic, MicOff, PlayCircle } from "lucide-react";
 
 const formatTime = (s: number) => {
   const m = Math.floor(s / 60);
@@ -108,7 +108,7 @@ return (
             >
               <YouTube videoId={nowPlaying.id} opts={opts} onReady={onReady} onEnd={onEnd} key={nowPlaying.id} />
 
-{settings.showOverlay && showControls && (
+              {settings.showOverlay && showControls && (
                 <div className="absolute left-3 right-3 bottom-3 md:left-6 md:right-6 md:bottom-6 bg-background/70 backdrop-blur-md border rounded-md p-3 md:p-4 shadow">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                     <div>
@@ -142,6 +142,18 @@ return (
           )}
         </CardContent>
       </Card>
+
+      {nowPlaying && !settings.showOverlay && (
+        <Button
+          className="fixed bottom-6 right-6 rounded-full shadow-lg"
+          variant="gradient"
+          size="icon"
+          aria-label="Open player controls"
+          onClick={() => setSettings({ showOverlay: true })}
+        >
+          <PlayCircle className="h-6 w-6" />
+        </Button>
+      )}
     </section>
   );
 }

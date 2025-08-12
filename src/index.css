@@ -58,6 +58,7 @@ All colors MUST be HSL.
     --brand-1: 278 77% 58%; /* violet */
     --brand-2: 318 86% 55%; /* fuchsia */
     --gradient-primary: linear-gradient(135deg, hsl(var(--brand-1)), hsl(var(--brand-2)));
+    --gradient-foreground: 210 40% 98%;
   }
 
   .dark {
@@ -101,6 +102,7 @@ All colors MUST be HSL.
     --brand-1: 275 87% 66%;
     --brand-2: 315 86% 62%;
     --gradient-primary: linear-gradient(135deg, hsl(var(--brand-1)), hsl(var(--brand-2)));
+    --gradient-foreground: 210 40% 98%;
   }
 }
 

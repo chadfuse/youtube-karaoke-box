@@ -19,7 +19,13 @@ export default function TrendingKaraoke() {
       try {
         setLoading(true);
         setError(null);
-        const data = await getTrendingKaraoke({ apiKey: settings.apiKey, regionCode: settings.regionCode, maxResults: 12 });
+        const [us, uk] = await Promise.all([
+          getTrendingKaraoke({ apiKey: settings.apiKey, regionCode: "US", maxResults: 24 }),
+          getTrendingKaraoke({ apiKey: settings.apiKey, regionCode: "GB", maxResults: 24 }),
+        ]);
+        const map = new Map<string, KaraokeVideo>();
+        [...us, ...uk].forEach((v) => map.set(v.id, v));
+        const data = Array.from(map.values()).slice(0, 12);
         setItems(data);
         if (!nowPlaying && queue.length === 0 && data.length > 0) {
           setInitial(data[0]);
@@ -30,7 +36,7 @@ export default function TrendingKaraoke() {
         setLoading(false);
       }
     })();
-  }, [settings.apiKey, settings.regionCode]);
+  }, [settings.apiKey]);
 
   if (!settings.apiKey) return (
     <Card>
@@ -67,7 +73,7 @@ export default function TrendingKaraoke() {
                 </div>
                 <div className="p-2 flex items-center justify-between gap-2">
                   <div className="text-sm font-medium line-clamp-2" title={v.title}>{v.title}</div>
-                  <Button size="sm" variant="secondary" onClick={() => reserve(v)} aria-label={`Reserve ${v.title}`}>Reserve</Button>
+                  <Button size="sm" variant="gradient" onClick={() => reserve(v)} aria-label={`Reserve ${v.title}`}>Reserve</Button>
                 </div>
               </div>
             ))}

@@ -1,9 +1,12 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import KaraokePlayer from "@/components/controls/KaraokePlayer";
 import KaraokeSearch from "@/components/search/KaraokeSearch";
 import TrendingKaraoke from "@/components/trending/TrendingKaraoke";
 import ReserveQueue from "@/components/queue/ReserveQueue";
 import SettingsDialog from "@/components/SettingsDialog";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
 useEffect(() => {
@@ -27,15 +30,49 @@ useEffect(() => {
   }
 }, []);
 
+  const [email, setEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const em = session?.user?.email ?? null;
+      setEmail(em);
+      if (em) localStorage.setItem("karaoke_user_logged_in", "1");
+      else localStorage.removeItem("karaoke_user_logged_in");
+    });
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const em = session?.user?.email ?? null;
+      setEmail(em);
+      if (em) localStorage.setItem("karaoke_user_logged_in", "1");
+      else localStorage.removeItem("karaoke_user_logged_in");
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+  };
+
   return (
     <div className="min-h-screen">
 <header className="sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
   <div className="container flex items-center justify-between py-3">
     <h1 className="text-xl md:text-2xl font-bold flex items-center gap-2">
       <img src="/lovable-uploads/3997c5c5-9313-46e5-90bf-510265840249.png" alt="Chado karaoke logo" className="h-8 w-8 rounded" loading="lazy" />
-      Chado
     </h1>
-    <SettingsDialog />
+    <div className="flex items-center gap-2">
+      {email ? (
+        <>
+          <span className="hidden md:inline text-sm text-muted-foreground">{email}</span>
+          <Button size="sm" variant="outline" onClick={signOut}>Sign out</Button>
+        </>
+      ) : (
+        <>
+          <Button asChild size="sm" variant="outline"><Link to="/auth?mode=signin">Sign in</Link></Button>
+          <Button asChild size="sm" variant="gradient"><Link to="/auth?mode=register">Register</Link></Button>
+        </>
+      )}
+      <SettingsDialog />
+    </div>
   </div>
 </header>
 
