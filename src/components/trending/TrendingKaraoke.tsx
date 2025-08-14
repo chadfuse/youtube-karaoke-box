@@ -25,7 +25,19 @@ export default function TrendingKaraoke() {
         ]);
         const map = new Map<string, KaraokeVideo>();
         [...us, ...uk].forEach((v) => map.set(v.id, v));
-        const data = Array.from(map.values()).slice(0, 12);
+        
+        // Filter for English-only content based on title/description patterns
+        const allVideos = Array.from(map.values());
+        const englishVideos = allVideos.filter(video => {
+          const text = `${video.title} ${video.description || ''}`.toLowerCase();
+          // Basic heuristic: English songs typically have English words and patterns
+          const hasEnglishPattern = /\b(feat|featuring|official|video|lyrics|karaoke|cover|live|acoustic|remix|the|and|of|in|to|for|with|on|at|by)\b/.test(text);
+          const hasNonLatinChars = /[^\x00-\x7F]/.test(text);
+          // Keep if has English patterns and minimal non-Latin characters
+          return hasEnglishPattern && text.split('').filter(c => /[^\x00-\x7F]/.test(c)).length < text.length * 0.3;
+        });
+        
+        const data = englishVideos.slice(0, 12);
         setItems(data);
         if (!nowPlaying && queue.length === 0 && data.length > 0) {
           setInitial(data[0]);

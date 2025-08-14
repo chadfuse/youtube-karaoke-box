@@ -125,6 +125,9 @@ return (
                       <Button size="sm" onClick={() => setMicrophoneMuted(!microphoneMuted)} variant="secondary" aria-label={microphoneMuted ? "Unmute mic" : "Mute mic"}>
                         {microphoneMuted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
                       </Button>
+                      <Button size="sm" onClick={() => setSettings({ showOverlay: false })} variant="secondary" aria-label="Minimize player">
+                        <Minimize2 className="h-4 w-4" />
+                      </Button>
                       <Button size="sm" onClick={toggleFullscreen} variant="secondary" aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}>
                         {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
                       </Button>

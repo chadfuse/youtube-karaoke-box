@@ -57,7 +57,7 @@ useEffect(() => {
 <header className="sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
   <div className="container flex items-center justify-between py-3">
     <h1 className="text-xl md:text-2xl font-bold flex items-center gap-2">
-      <img src="/lovable-uploads/3997c5c5-9313-46e5-90bf-510265840249.png" alt="Chado karaoke logo" className="h-8 w-8 rounded" loading="lazy" />
+      <img src="/lovable-uploads/3997c5c5-9313-46e5-90bf-510265840249.png" alt="Chado karaoke logo" className="h-12 w-12 rounded" loading="lazy" />
     </h1>
     <div className="flex items-center gap-2">
       {email ? (
@@ -71,7 +71,7 @@ useEffect(() => {
           <Button asChild size="sm" variant="gradient"><Link to="/auth?mode=register">Register</Link></Button>
         </>
       )}
-      <SettingsDialog />
+      
     </div>
   </div>
 </header>
