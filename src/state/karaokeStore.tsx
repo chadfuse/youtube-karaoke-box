@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { KaraokeVideo } from "@/types/youtube";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface KaraokeSong extends KaraokeVideo {
   reserver?: string;
@@ -51,6 +52,157 @@ export const KaraokeProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [isPlaying, setIsPlaying] = useState(false);
   const [microphoneMuted, setMicrophoneMuted] = useState(false);
   const [settings, setSettingsState] = useState<KaraokeSettings>(DEFAULT_SETTINGS);
+  const [user, setUser] = useState<any>(null);
+
+  // Load user session and queue on mount
+  useEffect(() => {
+    const loadData = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        await loadUserQueue(session.user.id);
+      }
+    };
+    
+    loadData();
+    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        await loadUserQueue(session.user.id);
+      } else {
+        // Clear queue when user logs out
+        setQueue([]);
+        setNowPlaying(null);
+        setIsPlaying(false);
+      }
+    });
+    
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const loadUserQueue = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_queue')
+        .select(`
+          id,
+          position,
+          reserver,
+          karaoke_songs (
+            id,
+            title,
+            description,
+            thumbnail_url,
+            duration
+          )
+        `)
+        .eq('user_id', userId)
+        .order('position');
+
+      if (error) throw error;
+
+      const queueData = data?.map(item => ({
+        id: item.karaoke_songs.id,
+        title: item.karaoke_songs.title,
+        description: item.karaoke_songs.description || '',
+        thumbnailUrl: item.karaoke_songs.thumbnail_url || '',
+        durationSeconds: parseInt(item.karaoke_songs.duration || '0'),
+        reserver: item.reserver
+      })) || [];
+
+      setQueue(queueData);
+    } catch (error) {
+      console.error('Error loading user queue:', error);
+    }
+  };
+
+  const saveSongToDatabase = async (song: KaraokeVideo) => {
+    try {
+      const { error } = await supabase
+        .from('karaoke_songs')
+        .upsert({
+          id: song.id,
+          title: song.title,
+          description: song.description,
+          thumbnail_url: song.thumbnailUrl,
+          duration: song.durationSeconds.toString()
+        });
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error saving song:', error);
+    }
+  };
+
+  const saveToUserQueue = async (song: KaraokeSong, position: number) => {
+    if (!user) return;
+
+    try {
+      await saveSongToDatabase(song);
+      
+      const { error } = await supabase
+        .from('user_queue')
+        .insert({
+          user_id: user.id,
+          song_id: song.id,
+          reserver: song.reserver,
+          position
+        });
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error saving to queue:', error);
+    }
+  };
+
+  const removeFromUserQueue = async (songId: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('user_queue')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('song_id', songId);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error removing from queue:', error);
+    }
+  };
+
+  const updateQueuePositions = async (newQueue: KaraokeSong[]) => {
+    if (!user) return;
+
+    try {
+      // Delete all current queue items
+      await supabase
+        .from('user_queue')
+        .delete()
+        .eq('user_id', user.id);
+
+      // Insert new queue with updated positions
+      if (newQueue.length > 0) {
+        const queueItems = newQueue.map((song, index) => ({
+          user_id: user.id,
+          song_id: song.id,
+          reserver: song.reserver,
+          position: index
+        }));
+
+        const { error } = await supabase
+          .from('user_queue')
+          .insert(queueItems);
+
+        if (error) throw error;
+      }
+    } catch (error) {
+      console.error('Error updating queue positions:', error);
+    }
+  };
 
   // Persist select settings
   useEffect(() => {
@@ -61,10 +213,9 @@ export const KaraokeProvider: React.FC<{ children: React.ReactNode }> = ({ child
     localStorage.setItem("karaoke_region", settings.regionCode);
   }, [settings]);
 
-const reserve: KaraokeActions["reserve"] = (song, reserver) => {
+const reserve: KaraokeActions["reserve"] = async (song, reserver) => {
     // Enforce anonymous reserve limit (5) until auth is connected
-    const loggedIn = !!localStorage.getItem("karaoke_user_logged_in");
-    if (!loggedIn) {
+    if (!user) {
       const count = parseInt(localStorage.getItem("karaoke_anon_reserve_count") || "0", 10);
       if (count >= 5) {
         toast({ title: "Limit reached", description: "Sign in to reserve unlimited songs." });
@@ -86,41 +237,87 @@ const reserve: KaraokeActions["reserve"] = (song, reserver) => {
     if (!nowPlaying) {
       setNowPlaying(candidate);
       setIsPlaying(true);
+      
+      // Save song history if user is logged in
+      if (user) {
+        try {
+          await saveSongToDatabase(song);
+          await supabase
+            .from('song_history')
+            .insert({
+              user_id: user.id,
+              song_id: song.id
+            });
+        } catch (error) {
+          console.error('Error saving to history:', error);
+        }
+      }
     } else {
-      setQueue((q) => [...q, candidate]);
+      const newQueue = [...queue, candidate];
+      setQueue(newQueue);
+      
+      // Save to database if user is logged in
+      if (user) {
+        await saveToUserQueue(candidate, queue.length);
+      }
     }
     toast({ title: "Reserved", description: `${candidate.title} added to queue` });
   };
 
-  const removeFromQueue: KaraokeActions["removeFromQueue"] = (id) => {
-    setQueue((q) => q.filter((s) => s.id !== id));
+  const removeFromQueue: KaraokeActions["removeFromQueue"] = async (id) => {
+    const newQueue = queue.filter((s) => s.id !== id);
+    setQueue(newQueue);
+    
+    if (user) {
+      await removeFromUserQueue(id);
+      await updateQueuePositions(newQueue);
+    }
   };
 
-  const moveInQueue: KaraokeActions["moveInQueue"] = (from, to) => {
-    setQueue((q) => {
-      const copy = [...q];
-      const [item] = copy.splice(from, 1);
-      copy.splice(to, 0, item);
-      return copy;
-    });
+  const moveInQueue: KaraokeActions["moveInQueue"] = async (from, to) => {
+    const newQueue = [...queue];
+    const [item] = newQueue.splice(from, 1);
+    newQueue.splice(to, 0, item);
+    setQueue(newQueue);
+    
+    if (user) {
+      await updateQueuePositions(newQueue);
+    }
   };
 
   const play = () => setIsPlaying(true);
   const pause = () => setIsPlaying(false);
   const togglePlay = () => setIsPlaying((p) => !p);
 
-  const skip = () => {
-    setQueue((q) => {
-      if (q.length === 0) {
-        setNowPlaying(null);
-        setIsPlaying(false);
-        return q;
+  const skip = async () => {
+    if (queue.length === 0) {
+      setNowPlaying(null);
+      setIsPlaying(false);
+      return;
+    }
+    
+    const [next, ...rest] = queue;
+    setNowPlaying(next);
+    setIsPlaying(true);
+    setQueue(rest);
+    
+    // Save to history and update queue in database
+    if (user) {
+      try {
+        // Save the new now playing song to history
+        await supabase
+          .from('song_history')
+          .insert({
+            user_id: user.id,
+            song_id: next.id
+          });
+        
+        // Remove the first item from queue and update positions
+        await updateQueuePositions(rest);
+      } catch (error) {
+        console.error('Error updating skip in database:', error);
       }
-      const [next, ...rest] = q;
-      setNowPlaying(next);
-      setIsPlaying(true);
-      return rest;
-    });
+    }
   };
 
 const setSettings: KaraokeActions["setSettings"] = (next) => {
