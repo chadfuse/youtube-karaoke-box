@@ -136,7 +136,7 @@ export default function KaraokePlayer() {
                 </div>
               )}
 
-              {!settings.showOverlay && (
+              {!settings.showOverlay && showControls && (
                 <Button
                   className="absolute bottom-4 right-4 rounded-full shadow-lg z-20"
                   variant="gradient"

@@ -31,25 +31,59 @@ useEffect(() => {
 }, []);
 
   const [email, setEmail] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       const em = session?.user?.email ?? null;
       setEmail(em);
-      if (em) localStorage.setItem("karaoke_user_logged_in", "1");
-      else localStorage.removeItem("karaoke_user_logged_in");
+      
+      if (em && session?.user) {
+        localStorage.setItem("karaoke_user_logged_in", "1");
+        // Check if user is admin
+        const { data } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .single();
+        setIsAdmin(data?.role === 'admin');
+      } else {
+        localStorage.removeItem("karaoke_user_logged_in");
+        setIsAdmin(false);
+      }
     });
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       const em = session?.user?.email ?? null;
       setEmail(em);
-      if (em) localStorage.setItem("karaoke_user_logged_in", "1");
-      else localStorage.removeItem("karaoke_user_logged_in");
+      
+      if (em && session?.user) {
+        localStorage.setItem("karaoke_user_logged_in", "1");
+        // Check if user is admin
+        const { data } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .single();
+        setIsAdmin(data?.role === 'admin');
+      } else {
+        localStorage.removeItem("karaoke_user_logged_in");
+        setIsAdmin(false);
+      }
     });
+    
     return () => subscription.unsubscribe();
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      setEmail(null);
+      setIsAdmin(false);
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
   return (
@@ -61,13 +95,15 @@ useEffect(() => {
         <img src="/lovable-uploads/3997c5c5-9313-46e5-90bf-510265840249.png" alt="Chado karaoke logo" className="h-12 w-12 rounded" loading="lazy" />
       </Link>
     </h1>
-    <div className="flex items-center gap-2">
+     <div className="flex items-center gap-2">
       {email ? (
         <>
           <span className="hidden md:inline text-sm text-muted-foreground">{email}</span>
-          <Button asChild size="sm" variant="ghost">
-            <Link to="/admin">Admin</Link>
-          </Button>
+          {isAdmin && (
+            <Button asChild size="sm" variant="ghost">
+              <Link to="/admin">Admin</Link>
+            </Button>
+          )}
           <Button size="sm" variant="outline" onClick={signOut}>Sign out</Button>
         </>
       ) : (
