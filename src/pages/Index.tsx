@@ -57,12 +57,17 @@ useEffect(() => {
 <header className="sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
   <div className="container flex items-center justify-between py-3">
     <h1 className="text-xl md:text-2xl font-bold flex items-center gap-2">
-      <img src="/lovable-uploads/3997c5c5-9313-46e5-90bf-510265840249.png" alt="Chado karaoke logo" className="h-12 w-12 rounded" loading="lazy" />
+      <Link to="/">
+        <img src="/lovable-uploads/3997c5c5-9313-46e5-90bf-510265840249.png" alt="Chado karaoke logo" className="h-12 w-12 rounded" loading="lazy" />
+      </Link>
     </h1>
     <div className="flex items-center gap-2">
       {email ? (
         <>
           <span className="hidden md:inline text-sm text-muted-foreground">{email}</span>
+          <Button asChild size="sm" variant="ghost">
+            <Link to="/admin">Admin</Link>
+          </Button>
           <Button size="sm" variant="outline" onClick={signOut}>Sign out</Button>
         </>
       ) : (

@@ -16,7 +16,7 @@ export default function KaraokePlayer() {
   const [countdown, setCountdown] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<any>(null);
-const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const hideTimer = useRef<number | null>(null);
 
@@ -77,7 +77,7 @@ const [isFullscreen, setIsFullscreen] = useState(false);
     else await document.exitFullscreen();
   };
 
-return (
+  return (
     <section aria-label="Now Playing" className="mb-6">
       <Card className="overflow-hidden">
         <CardHeader>
@@ -136,6 +136,18 @@ return (
                 </div>
               )}
 
+              {!settings.showOverlay && (
+                <Button
+                  className="absolute bottom-4 right-4 rounded-full shadow-lg z-20"
+                  variant="gradient"
+                  size="icon"
+                  aria-label="Open player controls"
+                  onClick={() => setSettings({ showOverlay: true })}
+                >
+                  <PlayCircle className="h-6 w-6" />
+                </Button>
+              )}
+
               {countdown !== null && (
                 <div className="absolute inset-0 flex items-center justify-center bg-background/60 backdrop-blur-sm">
                   <div className="text-6xl md:text-8xl font-bold text-primary animate-pulse">{countdown}</div>
@@ -145,18 +157,6 @@ return (
           )}
         </CardContent>
       </Card>
-
-      {nowPlaying && !settings.showOverlay && (
-        <Button
-          className="fixed bottom-6 right-6 rounded-full shadow-lg"
-          variant="gradient"
-          size="icon"
-          aria-label="Open player controls"
-          onClick={() => setSettings({ showOverlay: true })}
-        >
-          <PlayCircle className="h-6 w-6" />
-        </Button>
-      )}
     </section>
   );
 }

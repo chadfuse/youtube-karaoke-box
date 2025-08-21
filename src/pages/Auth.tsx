@@ -86,6 +86,31 @@ export default function Auth() {
                 {loading ? "Please wait..." : mode === "signin" ? "Sign in" : "Register"}
               </Button>
             </form>
+            <div className="my-4 text-center text-sm text-muted-foreground">or</div>
+            <Button 
+              type="button" 
+              variant="outline" 
+              className="w-full" 
+              onClick={async () => {
+                setLoading(true);
+                try {
+                  const { error } = await supabase.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: {
+                      redirectTo: `${window.location.origin}/`
+                    }
+                  });
+                  if (error) throw error;
+                } catch (err: any) {
+                  toast({ title: "Authentication error", description: err.message || "Please try again" });
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              disabled={loading}
+            >
+              Continue with Google
+            </Button>
             <div className="mt-3 text-sm text-muted-foreground">
               {mode === "signin" ? (
                 <span>Don’t have an account? <Link className="underline" to="/auth?mode=register">Register</Link></span>

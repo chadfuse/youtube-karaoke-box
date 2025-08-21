@@ -77,7 +77,7 @@ export async function searchKaraoke({ apiKey, q, maxResults = 25, regionCode = "
 export async function getTrendingKaraoke({ apiKey, maxResults = 12, regionCode = "US" }: TrendingParams): Promise<KaraokeVideo[]> {
   // Improved "trending": fetch more, then filter to real karaoke tracks
   const fetchCount = Math.min(50, Math.max(maxResults * 4, maxResults));
-  const url = `${YT_API_BASE}/search?part=snippet&type=video&videoEmbeddable=true&maxResults=${fetchCount}&order=viewCount&regionCode=${encodeURIComponent(regionCode)}&q=karaoke&key=${encodeURIComponent(apiKey)}`;
+  const url = `${YT_API_BASE}/search?part=snippet&type=video&videoEmbeddable=true&maxResults=${fetchCount}&order=viewCount&regionCode=${encodeURIComponent(regionCode)}&q=${encodeURIComponent("top karaoke songs english")}&key=${encodeURIComponent(apiKey)}`;
   type Resp = {
     items: Array<{
       id: { videoId: string };
