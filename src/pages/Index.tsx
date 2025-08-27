@@ -34,44 +34,67 @@ useEffect(() => {
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       const em = session?.user?.email ?? null;
       setEmail(em);
-      
-      if (em && session?.user) {
+
+      if (session?.user) {
         localStorage.setItem("karaoke_user_logged_in", "1");
-        // Check if user is admin
-        const { data } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('user_id', session.user.id)
-          .single();
-        setIsAdmin(data?.role === 'admin');
+        // Defer Supabase calls to avoid deadlocks inside the callback
+        setTimeout(async () => {
+          try {
+            // Ensure profile exists; grant admin if email matches
+            if (em === 'admin@chado.app') {
+              await supabase
+                .from('profiles')
+                .upsert({ user_id: session.user.id, role: 'admin' } as any, { onConflict: 'user_id' });
+            } else {
+              await supabase
+                .from('profiles')
+                .upsert({ user_id: session.user.id } as any, { onConflict: 'user_id', ignoreDuplicates: true });
+            }
+
+            const { data } = await supabase
+              .from('profiles')
+              .select('role')
+              .eq('user_id', session.user.id)
+              .single();
+            setIsAdmin(data?.role === 'admin');
+          } catch (e) {
+            console.error('Profile check failed', e);
+            setIsAdmin(false);
+          }
+        }, 0);
       } else {
         localStorage.removeItem("karaoke_user_logged_in");
         setIsAdmin(false);
       }
     });
-    
+
+    // Initial session load
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       const em = session?.user?.email ?? null;
       setEmail(em);
-      
-      if (em && session?.user) {
+
+      if (session?.user) {
         localStorage.setItem("karaoke_user_logged_in", "1");
-        // Check if user is admin
-        const { data } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('user_id', session.user.id)
-          .single();
-        setIsAdmin(data?.role === 'admin');
+        try {
+          const { data } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('user_id', session.user.id)
+            .single();
+          setIsAdmin(data?.role === 'admin');
+        } catch (e) {
+          console.error('Initial role check failed', e);
+          setIsAdmin(false);
+        }
       } else {
         localStorage.removeItem("karaoke_user_logged_in");
         setIsAdmin(false);
       }
     });
-    
+
     return () => subscription.unsubscribe();
   }, []);
 

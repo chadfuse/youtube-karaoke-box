@@ -29,12 +29,29 @@ export default function Admin() {
   }, []);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) {
         navigate("/auth?mode=signin");
         return;
       }
       setUser(session.user);
+
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .single();
+
+        if (data?.role !== 'admin') {
+          toast({ title: "Access denied", description: "Admins only" });
+          navigate("/");
+        }
+      } catch (e) {
+        console.error('Admin check failed', e);
+        toast({ title: "Access denied", description: "Admins only" });
+        navigate("/");
+      }
     });
   }, [navigate]);
 
