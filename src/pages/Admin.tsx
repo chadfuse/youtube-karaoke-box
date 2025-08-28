@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useKaraoke } from "@/state/karaokeStore";
 import { toast } from "@/hooks/use-toast";
 import { ArrowLeft } from "lucide-react";
+import { auditLogger } from "@/utils/auditLogger";
 
 export default function Admin() {
   const [user, setUser] = useState<any>(null);
@@ -44,11 +45,15 @@ export default function Admin() {
           .single();
 
         if (data?.role !== 'admin') {
+          auditLogger.adminAccess(false, session.user.email);
           toast({ title: "Access denied", description: "Admins only" });
           navigate("/");
+        } else {
+          auditLogger.adminAccess(true, session.user.email);
         }
       } catch (e) {
         console.error('Admin check failed', e);
+        auditLogger.adminAccess(false, session.user.email);
         toast({ title: "Access denied", description: "Admins only" });
         navigate("/");
       }
@@ -56,6 +61,8 @@ export default function Admin() {
   }, [navigate]);
 
   const handleSaveSetting = async (key: string, value: any) => {
+    const oldValue = settings[key as keyof typeof settings];
+    
     // For YouTube API settings, save globally to database
     if (key === 'apiKey' || key === 'regionCode') {
       try {
@@ -69,15 +76,20 @@ export default function Admin() {
 
         if (error) throw error;
         
+        // Log the setting change
+        auditLogger.settingChanged(key, value, oldValue);
+        
         // Also update local settings for immediate UI feedback
         setSettings({ [key]: value });
         toast({ title: "Global setting saved", description: "This setting will be used by all users." });
       } catch (error) {
         console.error('Error saving global setting:', error);
+        auditLogger.securityEvent('GLOBAL_SETTING_SAVE_FAILED', { key, error: error.message });
         toast({ title: "Error", description: "Failed to save global setting." });
       }
     } else {
       // For other settings, save locally as before
+      auditLogger.settingChanged(key, value, oldValue);
       setSettings({ [key]: value });
       toast({ title: "Setting saved", description: "Your setting has been updated." });
     }
@@ -226,6 +238,7 @@ export default function Admin() {
                 className="w-full justify-start"
                 onClick={() => {
                   localStorage.clear();
+                  auditLogger.cacheCleared();
                   toast({ title: "Cache cleared", description: "Local storage has been cleared." });
                 }}
               >
@@ -236,6 +249,7 @@ export default function Admin() {
                 variant="outline"
                 className="w-full justify-start"
                 onClick={async () => {
+                  auditLogger.signOut();
                   await supabase.auth.signOut();
                   navigate("/");
                 }}

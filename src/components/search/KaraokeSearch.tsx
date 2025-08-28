@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useKaraoke } from "@/state/karaokeStore";
 import { searchKaraoke } from "@/hooks/useYouTube";
 import { KaraokeVideo } from "@/types/youtube";
+import { validateSearchQuery, searchRateLimiter } from "@/utils/inputValidation";
 
 export default function KaraokeSearch() {
 const { settings, reserve } = useKaraoke();
@@ -16,10 +17,30 @@ const { settings, reserve } = useKaraoke();
   const onSearch = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!settings.apiKey) return;
+
+    // Validate and sanitize input
+    const validation = validateSearchQuery(q);
+    if (!validation.isValid) {
+      setError(validation.error || "Invalid search query");
+      return;
+    }
+
+    // Rate limiting check
+    const clientId = `search_${Date.now()}`;
+    if (!searchRateLimiter.isAllowed(clientId)) {
+      setError("Too many requests. Please wait before searching again.");
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
-      const data = await searchKaraoke({ apiKey: settings.apiKey, q, regionCode: settings.regionCode, maxResults: 24 });
+      const data = await searchKaraoke({ 
+        apiKey: settings.apiKey, 
+        q: validation.sanitized, 
+        regionCode: settings.regionCode, 
+        maxResults: 24 
+      });
       setResults(data);
     } catch (err: any) {
       setError(err.message || "Search failed");
