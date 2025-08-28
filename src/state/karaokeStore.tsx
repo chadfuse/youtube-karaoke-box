@@ -54,7 +54,7 @@ export const KaraokeProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [settings, setSettingsState] = useState<KaraokeSettings>(DEFAULT_SETTINGS);
   const [user, setUser] = useState<any>(null);
 
-  // Load global settings on mount
+  // Load global settings on mount (only accessible to admins)
   useEffect(() => {
     const loadGlobalSettings = async () => {
       try {
@@ -63,7 +63,24 @@ export const KaraokeProvider: React.FC<{ children: React.ReactNode }> = ({ child
           .select('key, value')
           .in('key', ['youtube_apiKey', 'youtube_regionCode']);
 
-        if (error) throw error;
+        if (error) {
+          // RLS will block non-admin users - this is expected behavior
+          if (error.code === 'PGRST116' || error.message.includes('permission denied') || error.message.includes('policy')) {
+            console.log('Global settings not accessible - user is not an admin');
+            // Fallback to local storage for API key if global settings fail
+            const localApiKey = localStorage.getItem("yt_api_key") || "";
+            const localRegion = localStorage.getItem("karaoke_region") || "US";
+            if (localApiKey || localRegion !== "US") {
+              setSettingsState(prev => ({
+                ...prev,
+                apiKey: localApiKey,
+                regionCode: localRegion
+              }));
+            }
+            return;
+          }
+          throw error;
+        }
 
         const globalSettings: Partial<KaraokeSettings> = {};
         data?.forEach(setting => {
