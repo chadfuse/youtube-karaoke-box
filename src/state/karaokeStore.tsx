@@ -37,11 +37,11 @@ interface KaraokeActions {
 }
 
 const DEFAULT_SETTINGS: KaraokeSettings = {
-  apiKey: localStorage.getItem("yt_api_key") || "",
+  apiKey: "",
   allowDuplicates: JSON.parse(localStorage.getItem("karaoke_allow_duplicates") || "false"),
   showOverlay: JSON.parse(localStorage.getItem("karaoke_show_overlay") || "true"),
   countdownEnabled: JSON.parse(localStorage.getItem("karaoke_countdown") || "true"),
-  regionCode: localStorage.getItem("karaoke_region") || "US",
+  regionCode: "US",
 };
 
 const KaraokeContext = createContext<(KaraokeState & KaraokeActions) | null>(null);
@@ -53,6 +53,53 @@ export const KaraokeProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [microphoneMuted, setMicrophoneMuted] = useState(false);
   const [settings, setSettingsState] = useState<KaraokeSettings>(DEFAULT_SETTINGS);
   const [user, setUser] = useState<any>(null);
+
+  // Load global settings on mount
+  useEffect(() => {
+    const loadGlobalSettings = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('global_settings')
+          .select('key, value')
+          .in('key', ['youtube_apiKey', 'youtube_regionCode']);
+
+        if (error) throw error;
+
+        const globalSettings: Partial<KaraokeSettings> = {};
+        data?.forEach(setting => {
+          if (setting.key === 'youtube_apiKey') {
+            globalSettings.apiKey = (setting.value as any).value;
+          } else if (setting.key === 'youtube_regionCode') {
+            globalSettings.regionCode = (setting.value as any).value;
+          }
+        });
+
+        // Merge global settings with local defaults
+        setSettingsState(prev => ({
+          ...prev,
+          ...globalSettings,
+          // Keep local settings for user preferences
+          allowDuplicates: JSON.parse(localStorage.getItem("karaoke_allow_duplicates") || "false"),
+          showOverlay: JSON.parse(localStorage.getItem("karaoke_show_overlay") || "true"),
+          countdownEnabled: JSON.parse(localStorage.getItem("karaoke_countdown") || "true"),
+        }));
+      } catch (error) {
+        console.error('Error loading global settings:', error);
+        // Fallback to local storage for API key if global settings fail
+        const localApiKey = localStorage.getItem("yt_api_key") || "";
+        const localRegion = localStorage.getItem("karaoke_region") || "US";
+        if (localApiKey || localRegion !== "US") {
+          setSettingsState(prev => ({
+            ...prev,
+            apiKey: localApiKey,
+            regionCode: localRegion
+          }));
+        }
+      }
+    };
+
+    loadGlobalSettings();
+  }, []);
 
   // Load user session and queue on mount
   useEffect(() => {
@@ -204,13 +251,18 @@ export const KaraokeProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  // Persist select settings
+  // Persist select settings (only user preferences, not global settings)
   useEffect(() => {
-    localStorage.setItem("yt_api_key", settings.apiKey);
     localStorage.setItem("karaoke_allow_duplicates", JSON.stringify(settings.allowDuplicates));
     localStorage.setItem("karaoke_show_overlay", JSON.stringify(settings.showOverlay));
     localStorage.setItem("karaoke_countdown", JSON.stringify(settings.countdownEnabled));
-    localStorage.setItem("karaoke_region", settings.regionCode);
+    // Keep legacy support for local API key as fallback
+    if (settings.apiKey && !settings.apiKey.includes('global')) {
+      localStorage.setItem("yt_api_key", settings.apiKey);
+    }
+    if (settings.regionCode !== "US") {
+      localStorage.setItem("karaoke_region", settings.regionCode);
+    }
   }, [settings]);
 
 const reserve: KaraokeActions["reserve"] = async (song, reserver) => {

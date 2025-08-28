@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      global_settings: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
       karaoke_songs: {
         Row: {
           created_at: string

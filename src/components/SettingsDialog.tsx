@@ -22,14 +22,26 @@ export default function SettingsDialog() {
           <DialogDescription>Configure YouTube API and playback options.</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-2">
-          <div className="grid gap-2">
-            <Label htmlFor="apiKey">YouTube API Key</Label>
-            <Input id="apiKey" type="password" value={settings.apiKey} onChange={(e) => setSettings({ apiKey: e.target.value })} placeholder="Enter your API key" />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="region">Region Code</Label>
-            <Input id="region" value={settings.regionCode} onChange={(e) => setSettings({ regionCode: e.target.value.toUpperCase() })} placeholder="US" />
-          </div>
+          {settings.apiKey ? (
+            <div className="rounded-lg bg-muted p-3">
+              <p className="text-sm text-muted-foreground">
+                <strong>YouTube API configured globally by admin.</strong><br />
+                All users are using the same API key and region settings.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="grid gap-2">
+                <Label htmlFor="apiKey">YouTube API Key</Label>
+                <Input id="apiKey" type="password" value={settings.apiKey} onChange={(e) => setSettings({ apiKey: e.target.value })} placeholder="Enter your API key" />
+                <p className="text-xs text-muted-foreground">No global API key configured. Enter your own.</p>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="region">Region Code</Label>
+                <Input id="region" value={settings.regionCode} onChange={(e) => setSettings({ regionCode: e.target.value.toUpperCase() })} placeholder="US" />
+              </div>
+            </>
+          )}
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <Label>Allow duplicates</Label>

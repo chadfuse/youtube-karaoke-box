@@ -55,9 +55,32 @@ export default function Admin() {
     });
   }, [navigate]);
 
-  const handleSaveSetting = (key: string, value: any) => {
-    setSettings({ [key]: value });
-    toast({ title: "Setting saved", description: "Your setting has been updated." });
+  const handleSaveSetting = async (key: string, value: any) => {
+    // For YouTube API settings, save globally to database
+    if (key === 'apiKey' || key === 'regionCode') {
+      try {
+        const { error } = await supabase
+          .from('global_settings')
+          .upsert({
+            key: `youtube_${key}`,
+            value: { value },
+            created_by: user.id
+          });
+
+        if (error) throw error;
+        
+        // Also update local settings for immediate UI feedback
+        setSettings({ [key]: value });
+        toast({ title: "Global setting saved", description: "This setting will be used by all users." });
+      } catch (error) {
+        console.error('Error saving global setting:', error);
+        toast({ title: "Error", description: "Failed to save global setting." });
+      }
+    } else {
+      // For other settings, save locally as before
+      setSettings({ [key]: value });
+      toast({ title: "Setting saved", description: "Your setting has been updated." });
+    }
   };
 
   if (!user) {
