@@ -133,20 +133,20 @@ export default function Admin() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="youtube-api">YouTube API Key</Label>
+                <Label htmlFor="youtube-api">YouTube API Key (Global)</Label>
                 <Input
                   id="youtube-api"
-                  type="password"
+                  type="text"
                   value={settings.apiKey}
                   onChange={(e) => handleSaveSetting('apiKey', e.target.value)}
-                  placeholder="Enter your YouTube API key"
+                  placeholder="Enter your YouTube API key (will be used by all users)"
                 />
                 <p className="text-sm text-muted-foreground">
-                  Get your API key from Google Cloud Console
+                  Get your API key from Google Cloud Console. This will be used globally for all users.
                 </p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="region-code">Region Code</Label>
+                <Label htmlFor="region-code">Region Code (Global)</Label>
                 <Input
                   id="region-code"
                   value={settings.regionCode}
@@ -154,7 +154,7 @@ export default function Admin() {
                   placeholder="US"
                 />
                 <p className="text-sm text-muted-foreground">
-                  Two-letter country code for regional content
+                  Two-letter country code for regional content (applies globally)
                 </p>
               </div>
             </CardContent>
