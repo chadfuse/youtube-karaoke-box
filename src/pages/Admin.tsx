@@ -72,6 +72,8 @@ export default function Admin() {
             key: `youtube_${key}`,
             value: { value },
             created_by: user.id
+          }, {
+            onConflict: 'key'
           });
 
         if (error) throw error;
