@@ -13,6 +13,10 @@ import { auditLogger } from "@/utils/auditLogger";
 
 export default function Admin() {
   const [user, setUser] = useState<any>(null);
+  const [globalSettings, setGlobalSettings] = useState<{apiKey: string; regionCode: string}>({
+    apiKey: '',
+    regionCode: 'US'
+  });
   const { settings, setSettings } = useKaraoke();
   const navigate = useNavigate();
 
@@ -50,6 +54,7 @@ export default function Admin() {
           navigate("/");
         } else {
           auditLogger.adminAccess(true, session.user.email);
+          await loadGlobalSettings();
         }
       } catch (e) {
         console.error('Admin check failed', e);
@@ -60,8 +65,32 @@ export default function Admin() {
     });
   }, [navigate]);
 
+  const loadGlobalSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('global_settings')
+        .select('key, value')
+        .in('key', ['youtube_apiKey', 'youtube_regionCode']);
+
+      if (error) throw error;
+
+      const loadedSettings = { apiKey: '', regionCode: 'US' };
+      data?.forEach(setting => {
+        if (setting.key === 'youtube_apiKey') {
+          loadedSettings.apiKey = (setting.value as any).value || '';
+        } else if (setting.key === 'youtube_regionCode') {
+          loadedSettings.regionCode = (setting.value as any).value || 'US';
+        }
+      });
+
+      setGlobalSettings(loadedSettings);
+    } catch (error) {
+      console.error('Error loading global settings:', error);
+    }
+  };
+
   const handleSaveSetting = async (key: string, value: any) => {
-    const oldValue = settings[key as keyof typeof settings];
+    const oldValue = key === 'apiKey' ? globalSettings.apiKey : key === 'regionCode' ? globalSettings.regionCode : settings[key as keyof typeof settings];
     
     // For YouTube API settings, save globally to database
     if (key === 'apiKey' || key === 'regionCode') {
@@ -81,7 +110,8 @@ export default function Admin() {
         // Log the setting change
         auditLogger.settingChanged(key, value, oldValue);
         
-        // Also update local settings for immediate UI feedback
+        // Update global settings state and local settings for immediate UI feedback
+        setGlobalSettings(prev => ({ ...prev, [key]: value }));
         setSettings({ [key]: value });
         toast({ title: "Global setting saved", description: "This setting will be used by all users." });
       } catch (error) {
@@ -139,7 +169,7 @@ export default function Admin() {
                 <Input
                   id="youtube-api"
                   type="text"
-                  value={settings.apiKey}
+                  value={globalSettings.apiKey}
                   onChange={(e) => handleSaveSetting('apiKey', e.target.value)}
                   placeholder="Enter your YouTube API key (will be used by all users)"
                 />
@@ -151,7 +181,7 @@ export default function Admin() {
                 <Label htmlFor="region-code">Region Code (Global)</Label>
                 <Input
                   id="region-code"
-                  value={settings.regionCode}
+                  value={globalSettings.regionCode}
                   onChange={(e) => handleSaveSetting('regionCode', e.target.value)}
                   placeholder="US"
                 />
