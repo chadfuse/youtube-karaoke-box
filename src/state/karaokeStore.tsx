@@ -54,20 +54,20 @@ export const KaraokeProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [settings, setSettingsState] = useState<KaraokeSettings>(DEFAULT_SETTINGS);
   const [user, setUser] = useState<any>(null);
 
-  // Load global settings on mount (only accessible to admins)
+  // Load global settings on mount for all authenticated users
   useEffect(() => {
     const loadGlobalSettings = async () => {
       try {
-        const { data, error } = await supabase
-          .from('global_settings')
-          .select('key, value')
-          .in('key', ['youtube_apiKey', 'youtube_regionCode']);
-
-        if (error) {
-          // RLS will block non-admin users - this is expected behavior
-          if (error.code === 'PGRST116' || error.message.includes('permission denied') || error.message.includes('policy')) {
-            console.log('Global settings not accessible - user is not an admin');
-            // Fallback to local storage for API key if global settings fail
+        // First try to get user session
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.user) {
+          // For authenticated users, call the edge function to get global settings
+          const { data, error } = await supabase.functions.invoke('get-global-settings');
+          
+          if (error) {
+            console.error('Error loading global settings:', error);
+            // Fallback to local storage
             const localApiKey = localStorage.getItem("yt_api_key") || "";
             const localRegion = localStorage.getItem("karaoke_region") || "US";
             if (localApiKey || localRegion !== "US") {
@@ -79,27 +79,31 @@ export const KaraokeProvider: React.FC<{ children: React.ReactNode }> = ({ child
             }
             return;
           }
-          throw error;
-        }
 
-        const globalSettings: Partial<KaraokeSettings> = {};
-        data?.forEach(setting => {
-          if (setting.key === 'youtube_apiKey') {
-            globalSettings.apiKey = (setting.value as any).value;
-          } else if (setting.key === 'youtube_regionCode') {
-            globalSettings.regionCode = (setting.value as any).value;
+          const globalSettings = data?.settings || {};
+          
+          // Merge global settings with local defaults
+          setSettingsState(prev => ({
+            ...prev,
+            apiKey: globalSettings.apiKey || prev.apiKey,
+            regionCode: globalSettings.regionCode || prev.regionCode,
+            // Keep local settings for user preferences
+            allowDuplicates: JSON.parse(localStorage.getItem("karaoke_allow_duplicates") || "false"),
+            showOverlay: JSON.parse(localStorage.getItem("karaoke_show_overlay") || "true"),
+            countdownEnabled: JSON.parse(localStorage.getItem("karaoke_countdown") || "true"),
+          }));
+        } else {
+          // For anonymous users, use local storage fallback
+          const localApiKey = localStorage.getItem("yt_api_key") || "";
+          const localRegion = localStorage.getItem("karaoke_region") || "US";
+          if (localApiKey || localRegion !== "US") {
+            setSettingsState(prev => ({
+              ...prev,
+              apiKey: localApiKey,
+              regionCode: localRegion
+            }));
           }
-        });
-
-        // Merge global settings with local defaults
-        setSettingsState(prev => ({
-          ...prev,
-          ...globalSettings,
-          // Keep local settings for user preferences
-          allowDuplicates: JSON.parse(localStorage.getItem("karaoke_allow_duplicates") || "false"),
-          showOverlay: JSON.parse(localStorage.getItem("karaoke_show_overlay") || "true"),
-          countdownEnabled: JSON.parse(localStorage.getItem("karaoke_countdown") || "true"),
-        }));
+        }
       } catch (error) {
         console.error('Error loading global settings:', error);
         // Fallback to local storage for API key if global settings fail
@@ -126,6 +130,8 @@ export const KaraokeProvider: React.FC<{ children: React.ReactNode }> = ({ child
       
       if (session?.user) {
         await loadUserQueue(session.user.id);
+        // Also load global settings when user is authenticated
+        await loadGlobalSettingsForUser();
       }
     };
     
@@ -136,6 +142,8 @@ export const KaraokeProvider: React.FC<{ children: React.ReactNode }> = ({ child
       
       if (session?.user) {
         await loadUserQueue(session.user.id);
+        // Load global settings when user signs in
+        await loadGlobalSettingsForUser();
       } else {
         // Clear queue when user logs out
         setQueue([]);
@@ -146,6 +154,31 @@ export const KaraokeProvider: React.FC<{ children: React.ReactNode }> = ({ child
     
     return () => subscription.unsubscribe();
   }, []);
+
+  const loadGlobalSettingsForUser = async () => {
+    try {
+      // For authenticated users, call the edge function to get global settings
+      const { data, error } = await supabase.functions.invoke('get-global-settings');
+      
+      if (error) {
+        console.error('Error loading global settings for user:', error);
+        return;
+      }
+
+      const globalSettings = data?.settings || {};
+      
+      // Update settings with global values if they exist
+      if (globalSettings.apiKey || globalSettings.regionCode) {
+        setSettingsState(prev => ({
+          ...prev,
+          apiKey: globalSettings.apiKey || prev.apiKey,
+          regionCode: globalSettings.regionCode || prev.regionCode,
+        }));
+      }
+    } catch (error) {
+      console.error('Error loading global settings for user:', error);
+    }
+  };
 
   const loadUserQueue = async (userId: string) => {
     try {
