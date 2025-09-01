@@ -1,1 +1,4 @@
 project_id = "eyetltsnrajukzrxmtbt"
+
+[functions.get-global-settings]
+verify_jwt = false

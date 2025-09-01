@@ -54,59 +54,28 @@ export const KaraokeProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [settings, setSettingsState] = useState<KaraokeSettings>(DEFAULT_SETTINGS);
   const [user, setUser] = useState<any>(null);
 
-  // Load global settings on mount for all authenticated users
+  // Load global settings on mount (works for guests and signed-in users)
   useEffect(() => {
     const loadGlobalSettings = async () => {
       try {
-        // First try to get user session
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session?.user) {
-          // For authenticated users, call the edge function to get global settings
-          const { data, error } = await supabase.functions.invoke('get-global-settings');
-          
-          if (error) {
-            console.error('Error loading global settings:', error);
-            // Fallback to local storage
-            const localApiKey = localStorage.getItem("yt_api_key") || "";
-            const localRegion = localStorage.getItem("karaoke_region") || "US";
-            if (localApiKey || localRegion !== "US") {
-              setSettingsState(prev => ({
-                ...prev,
-                apiKey: localApiKey,
-                regionCode: localRegion
-              }));
-            }
-            return;
-          }
+        const { data, error } = await supabase.functions.invoke('get-global-settings');
+        if (error) throw error;
 
-          const globalSettings = data?.settings || {};
-          
-          // Merge global settings with local defaults
-          setSettingsState(prev => ({
-            ...prev,
-            apiKey: globalSettings.apiKey || prev.apiKey,
-            regionCode: globalSettings.regionCode || prev.regionCode,
-            // Keep local settings for user preferences
-            allowDuplicates: JSON.parse(localStorage.getItem("karaoke_allow_duplicates") || "false"),
-            showOverlay: JSON.parse(localStorage.getItem("karaoke_show_overlay") || "true"),
-            countdownEnabled: JSON.parse(localStorage.getItem("karaoke_countdown") || "true"),
-          }));
-        } else {
-          // For anonymous users, use local storage fallback
-          const localApiKey = localStorage.getItem("yt_api_key") || "";
-          const localRegion = localStorage.getItem("karaoke_region") || "US";
-          if (localApiKey || localRegion !== "US") {
-            setSettingsState(prev => ({
-              ...prev,
-              apiKey: localApiKey,
-              regionCode: localRegion
-            }));
-          }
-        }
+        const globalSettings = data?.settings || {};
+        
+        // Merge global settings with local defaults
+        setSettingsState(prev => ({
+          ...prev,
+          apiKey: globalSettings.apiKey || prev.apiKey,
+          regionCode: globalSettings.regionCode || prev.regionCode,
+          // Keep local settings for user preferences
+          allowDuplicates: JSON.parse(localStorage.getItem("karaoke_allow_duplicates") || "false"),
+          showOverlay: JSON.parse(localStorage.getItem("karaoke_show_overlay") || "true"),
+          countdownEnabled: JSON.parse(localStorage.getItem("karaoke_countdown") || "true"),
+        }));
       } catch (error) {
         console.error('Error loading global settings:', error);
-        // Fallback to local storage for API key if global settings fail
+        // Fallback to local storage for guests
         const localApiKey = localStorage.getItem("yt_api_key") || "";
         const localRegion = localStorage.getItem("karaoke_region") || "US";
         if (localApiKey || localRegion !== "US") {
