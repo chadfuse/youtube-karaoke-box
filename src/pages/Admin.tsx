@@ -71,7 +71,7 @@ export default function Admin() {
           .upsert({
             key: `youtube_${key}`,
             value: { value },
-            created_by: user.id
+            created_by: user?.id
           }, {
             onConflict: 'key'
           });
