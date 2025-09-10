@@ -37,7 +37,7 @@ interface KaraokeActions {
 }
 
 const DEFAULT_SETTINGS: KaraokeSettings = {
-  apiKey: "",
+  apiKey: "", // Legacy field, not used with server-side proxy
   allowDuplicates: JSON.parse(localStorage.getItem("karaoke_allow_duplicates") || "false"),
   showOverlay: JSON.parse(localStorage.getItem("karaoke_show_overlay") || "true"),
   countdownEnabled: JSON.parse(localStorage.getItem("karaoke_countdown") || "true"),
@@ -66,9 +66,8 @@ export const KaraokeProvider: React.FC<{ children: React.ReactNode }> = ({ child
         // Merge global settings with local defaults
         setSettingsState(prev => ({
           ...prev,
-          apiKey: globalSettings.apiKey || prev.apiKey,
           regionCode: globalSettings.regionCode || prev.regionCode,
-          // Keep local settings for user preferences
+          // Keep local settings for user preferences  
           allowDuplicates: JSON.parse(localStorage.getItem("karaoke_allow_duplicates") || "false"),
           showOverlay: JSON.parse(localStorage.getItem("karaoke_show_overlay") || "true"),
           countdownEnabled: JSON.parse(localStorage.getItem("karaoke_countdown") || "true"),
@@ -138,10 +137,9 @@ export const KaraokeProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const globalSettings = data?.settings || {};
       
       // Update settings with global values if they exist
-      if (globalSettings.apiKey || globalSettings.regionCode) {
+      if (globalSettings.regionCode) {
         setSettingsState(prev => ({
           ...prev,
-          apiKey: globalSettings.apiKey || prev.apiKey,
           regionCode: globalSettings.regionCode || prev.regionCode,
         }));
       }
@@ -276,10 +274,7 @@ export const KaraokeProvider: React.FC<{ children: React.ReactNode }> = ({ child
     localStorage.setItem("karaoke_allow_duplicates", JSON.stringify(settings.allowDuplicates));
     localStorage.setItem("karaoke_show_overlay", JSON.stringify(settings.showOverlay));
     localStorage.setItem("karaoke_countdown", JSON.stringify(settings.countdownEnabled));
-    // Keep legacy support for local API key as fallback
-    if (settings.apiKey && !settings.apiKey.includes('global')) {
-      localStorage.setItem("yt_api_key", settings.apiKey);
-    }
+    // Remove legacy API key storage since we use server-side proxy
     if (settings.regionCode !== "US") {
       localStorage.setItem("karaoke_region", settings.regionCode);
     }

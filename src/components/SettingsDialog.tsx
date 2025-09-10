@@ -19,29 +19,15 @@ export default function SettingsDialog() {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Karaoke Settings</DialogTitle>
-          <DialogDescription>Configure YouTube API and playback options.</DialogDescription>
+          <DialogDescription>Configure playback and user preferences.</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-2">
-          {settings.apiKey ? (
-            <div className="rounded-lg bg-muted p-3">
-              <p className="text-sm text-muted-foreground">
-                <strong>YouTube API configured globally by admin.</strong><br />
-                All users are using the same API key and region settings.
-              </p>
-            </div>
-          ) : (
-            <>
-              <div className="grid gap-2">
-                <Label htmlFor="apiKey">YouTube API Key</Label>
-                <Input id="apiKey" type="password" value={settings.apiKey} onChange={(e) => setSettings({ apiKey: e.target.value })} placeholder="Enter your API key" />
-                <p className="text-xs text-muted-foreground">No global API key configured. Enter your own.</p>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="region">Region Code</Label>
-                <Input id="region" value={settings.regionCode} onChange={(e) => setSettings({ regionCode: e.target.value.toUpperCase() })} placeholder="US" />
-              </div>
-            </>
-          )}
+          <div className="rounded-lg bg-muted p-3">
+            <p className="text-sm text-muted-foreground">
+              <strong>YouTube API configured globally.</strong><br />
+              All users can search and access trending videos via our secure API proxy.
+            </p>
+          </div>
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <Label>Allow duplicates</Label>
@@ -64,7 +50,7 @@ export default function SettingsDialog() {
             <Switch checked={settings.showOverlay} onCheckedChange={(v) => setSettings({ showOverlay: v })} />
           </div>
           <div className="pt-2 text-xs text-muted-foreground">
-            Note: The API key is stored locally in your browser (localStorage) and never sent to our servers.
+            Note: All YouTube API calls are handled securely through our server. Your preferences are stored locally in your browser.
           </div>
         </div>
       </DialogContent>
