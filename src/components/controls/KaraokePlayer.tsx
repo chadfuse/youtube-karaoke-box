@@ -17,8 +17,6 @@ export default function KaraokePlayer() {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<any>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [showControls, setShowControls] = useState(true);
-  const hideTimer = useRef<number | null>(null);
 
   useEffect(() => {
     const handler = () => setIsFullscreen(!!document.fullscreenElement);
@@ -92,23 +90,10 @@ export default function KaraokePlayer() {
               <p className="text-muted-foreground">Reserve a song to start</p>
             </div>
           ) : (
-            <div
-              ref={containerRef}
-              className="relative"
-              onMouseMove={() => {
-                setShowControls(true);
-                if (hideTimer.current) window.clearTimeout(hideTimer.current);
-                hideTimer.current = window.setTimeout(() => setShowControls(false), 7000);
-              }}
-              onTouchStart={() => {
-                setShowControls(true);
-                if (hideTimer.current) window.clearTimeout(hideTimer.current);
-                hideTimer.current = window.setTimeout(() => setShowControls(false), 7000);
-              }}
-            >
+            <div ref={containerRef} className="relative">
               <YouTube videoId={nowPlaying.id} opts={opts} onReady={onReady} onEnd={onEnd} key={nowPlaying.id} />
 
-              {settings.showOverlay && showControls && (
+              {settings.showOverlay && (
                 <div className="absolute left-3 right-3 bottom-3 md:left-6 md:right-6 md:bottom-6 bg-background/70 backdrop-blur-md border rounded-md p-3 md:p-4 shadow">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                     <div>
