@@ -106,13 +106,14 @@ export const KaraokeProvider: React.FC<{ children: React.ReactNode }> = ({ child
     
     loadData();
     
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
-      
+
       if (session?.user) {
-        await loadUserQueue(session.user.id);
-        // Load global settings when user signs in
-        await loadGlobalSettingsForUser();
+        setTimeout(() => {
+          loadUserQueue(session.user!.id);
+          loadGlobalSettingsForUser();
+        }, 0);
       } else {
         // Clear queue when user logs out
         setQueue([]);

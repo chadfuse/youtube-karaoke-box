@@ -16,7 +16,6 @@ const { settings, reserve } = useKaraoke();
 
   const onSearch = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!settings.apiKey) return;
 
     // Validate and sanitize input
     const validation = validateSearchQuery(q);
@@ -36,7 +35,6 @@ const { settings, reserve } = useKaraoke();
       setLoading(true);
       setError(null);
       const data = await searchKaraoke({ 
-        apiKey: settings.apiKey, 
         q: validation.sanitized, 
         regionCode: settings.regionCode, 
         maxResults: 24 
@@ -55,13 +53,10 @@ const { settings, reserve } = useKaraoke();
         <CardTitle>Search Karaoke</CardTitle>
       </CardHeader>
       <CardContent>
-        {!settings.apiKey && (
-          <p className="text-sm text-muted-foreground mb-3">Enter your YouTube API key in Settings to enable search.</p>
-        )}
-<form onSubmit={onSearch} className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-3">
+        <form onSubmit={onSearch} className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-3">
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search songs (e.g., Adele Hello)" aria-label="Search query" />
           <div className="hidden md:block" />
-          <Button type="submit" disabled={!settings.apiKey || q.trim().length === 0} className="w-full" variant="gradient">Search</Button>
+          <Button type="submit" disabled={q.trim().length === 0} className="w-full" variant="gradient">Search</Button>
         </form>
         {loading && <div className="grid grid-cols-1 md:grid-cols-2 gap-3">{Array.from({length:4}).map((_,i)=>(<div key={i} className="h-24 rounded-md bg-muted animate-pulse"/>))}</div>}
         {error && <p className="text-destructive mb-2">{error}</p>}

@@ -2,3 +2,9 @@ project_id = "eyetltsnrajukzrxmtbt"
 
 [functions.get-global-settings]
 verify_jwt = false
+
+[functions.youtube-search]
+verify_jwt = false
+
+[functions.youtube-trending]
+verify_jwt = false

@@ -9,14 +9,13 @@ export interface KaraokeVideo {
 }
 
 export interface SearchParams {
-  apiKey: string;
   q: string;
   maxResults?: number;
   regionCode?: string;
 }
 
 export interface TrendingParams {
-  apiKey: string;
   maxResults?: number;
   regionCode?: string;
 }
+

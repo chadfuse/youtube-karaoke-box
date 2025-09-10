@@ -38,13 +38,14 @@ serve(async (req) => {
       });
     }
 
-    // Format the response
-    const settings: { apiKey?: string; regionCode?: string } = {};
+    // Format the response without exposing the API key
+    const settings: { hasApi?: boolean; regionCode?: string } = {};
     data?.forEach(setting => {
       if (setting.key === 'youtube_apiKey') {
-        settings.apiKey = (setting.value as any).value || '';
+        const v = (setting.value as any)?.value;
+        if (v && String(v).length > 0) settings.hasApi = true;
       } else if (setting.key === 'youtube_regionCode') {
-        settings.regionCode = (setting.value as any).value || 'US';
+        settings.regionCode = (setting.value as any)?.value || 'US';
       }
     });
 

@@ -14,14 +14,13 @@ export default function TrendingKaraoke() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!settings.apiKey) return;
     (async () => {
       try {
         setLoading(true);
         setError(null);
         const [us, uk] = await Promise.all([
-          getTrendingKaraoke({ apiKey: settings.apiKey, regionCode: "US", maxResults: 24 }),
-          getTrendingKaraoke({ apiKey: settings.apiKey, regionCode: "GB", maxResults: 24 }),
+          getTrendingKaraoke({ regionCode: "US", maxResults: 24 }),
+          getTrendingKaraoke({ regionCode: "GB", maxResults: 24 }),
         ]);
         const map = new Map<string, KaraokeVideo>();
         [...us, ...uk].forEach((v) => map.set(v.id, v));
@@ -30,10 +29,7 @@ export default function TrendingKaraoke() {
         const allVideos = Array.from(map.values());
         const englishVideos = allVideos.filter(video => {
           const text = `${video.title} ${video.description || ''}`.toLowerCase();
-          // Basic heuristic: English songs typically have English words and patterns
           const hasEnglishPattern = /\b(feat|featuring|official|video|lyrics|karaoke|cover|live|acoustic|remix|the|and|of|in|to|for|with|on|at|by)\b/.test(text);
-          const hasNonLatinChars = /[^\x00-\x7F]/.test(text);
-          // Keep if has English patterns and minimal non-Latin characters
           return hasEnglishPattern && text.split('').filter(c => /[^\x00-\x7F]/.test(c)).length < text.length * 0.3;
         });
         
@@ -48,18 +44,7 @@ export default function TrendingKaraoke() {
         setLoading(false);
       }
     })();
-  }, [settings.apiKey]);
-
-  if (!settings.apiKey) return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Trending Karaoke</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm text-muted-foreground">Enter your YouTube API key in Settings to load trending videos.</p>
-      </CardContent>
-    </Card>
-  );
+  }, []);
 
   return (
     <Card>
