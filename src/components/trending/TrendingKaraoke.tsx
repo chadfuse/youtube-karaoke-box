@@ -35,9 +35,6 @@ export default function TrendingKaraoke() {
         
         const data = englishVideos.slice(0, 12);
         setItems(data);
-        if (!nowPlaying && queue.length === 0 && data.length > 0) {
-          setInitial(data[0]);
-        }
       } catch (e: any) {
         setError(e.message || "Failed to load trending");
       } finally {
