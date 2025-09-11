@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import KaraokePlayer from "@/components/controls/KaraokePlayer";
 import KaraokeSearch from "@/components/search/KaraokeSearch";
+import CompactSearch from "@/components/search/CompactSearch";
 import TrendingKaraoke from "@/components/trending/TrendingKaraoke";
 import ReserveQueue from "@/components/queue/ReserveQueue";
 import SettingsDialog from "@/components/SettingsDialog";
@@ -141,6 +142,7 @@ useEffect(() => {
 </header>
 
       <main className="container py-4 md:py-6">
+        <CompactSearch />
         <KaraokePlayer />
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
