@@ -27,14 +27,21 @@ export default function KaraokePlayer() {
   useEffect(() => {
     if (!nowPlaying) return;
     if (playerRef.current) {
-      if (isPlaying) playerRef.current.playVideo();
-      else playerRef.current.pauseVideo();
+      setTimeout(() => {
+        if (isPlaying) playerRef.current.playVideo();
+        else playerRef.current.pauseVideo();
+      }, 100);
     }
   }, [isPlaying, nowPlaying?.id]);
 
   const onReady = (e: any) => {
     playerRef.current = e.target;
-    if (isPlaying) e.target.playVideo();
+    // Always start playing when a new video is ready (auto-advance after countdown)
+    if (isPlaying) {
+      setTimeout(() => {
+        e.target.playVideo();
+      }, 100);
+    }
   };
 
   const onEnd = () => {
