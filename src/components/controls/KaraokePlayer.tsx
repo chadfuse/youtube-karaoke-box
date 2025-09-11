@@ -94,7 +94,7 @@ export default function KaraokePlayer() {
         <CardContent>
           {!nowPlaying ? (
             <div className="aspect-video w-full rounded-md bg-muted flex items-center justify-center">
-              <p className="text-muted-foreground">Reserve a song to start</p>
+              <p className="text-muted-foreground">Please choose a song</p>
             </div>
           ) : (
             <div ref={containerRef} className="relative">
