@@ -101,7 +101,7 @@ export default function KaraokePlayer() {
               <YouTube videoId={nowPlaying.id} opts={opts} onReady={onReady} onEnd={onEnd} key={nowPlaying.id} />
 
               {settings.showOverlay && (
-                <div className="absolute left-3 right-3 bottom-3 md:left-6 md:right-6 md:bottom-6 bg-background/70 backdrop-blur-md border rounded-md p-3 md:p-4 shadow">
+                <div className="absolute left-0 right-0 bottom-0 bg-background/70 backdrop-blur-md border-t rounded-t-md p-3 md:p-4 shadow">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                     <div>
                       <div className="font-semibold line-clamp-2">{nowPlaying.title}</div>
