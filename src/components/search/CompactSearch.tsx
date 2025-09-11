@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useKaraoke } from "@/state/karaokeStore";
@@ -14,38 +14,47 @@ export default function CompactSearch() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const onSearch = async (e?: React.FormEvent) => {
-    e?.preventDefault();
+  // Debounced search effect
+  useEffect(() => {
+    const timeoutId = setTimeout(async () => {
+      if (q.trim().length === 0) {
+        setResult(null);
+        setError(null);
+        return;
+      }
 
-    // Validate and sanitize input
-    const validation = validateSearchQuery(q);
-    if (!validation.isValid) {
-      setError(validation.error || "Invalid search query");
-      return;
-    }
+      // Validate and sanitize input
+      const validation = validateSearchQuery(q);
+      if (!validation.isValid) {
+        setError(validation.error || "Invalid search query");
+        return;
+      }
 
-    // Rate limiting check
-    const clientId = `compact_search_${Date.now()}`;
-    if (!searchRateLimiter.isAllowed(clientId)) {
-      setError("Too many requests. Please wait before searching again.");
-      return;
-    }
+      // Rate limiting check
+      const clientId = `compact_search_${Date.now()}`;
+      if (!searchRateLimiter.isAllowed(clientId)) {
+        setError("Too many requests. Please wait before searching again.");
+        return;
+      }
 
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await searchKaraoke({ 
-        q: validation.sanitized, 
-        regionCode: settings.regionCode, 
-        maxResults: 1 
-      });
-      setResult(data[0] || null);
-    } catch (err: any) {
-      setError(err.message || "Search failed");
-    } finally {
-      setLoading(false);
-    }
-  };
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await searchKaraoke({ 
+          q: validation.sanitized, 
+          regionCode: settings.regionCode, 
+          maxResults: 1 
+        });
+        setResult(data[0] || null);
+      } catch (err: any) {
+        setError(err.message || "Search failed");
+      } finally {
+        setLoading(false);
+      }
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [q, settings.regionCode]);
 
   const handleReserve = () => {
     if (result) {
@@ -58,26 +67,23 @@ export default function CompactSearch() {
   return (
     <section aria-label="Quick Search" className="mb-4">
       <div className="bg-card border rounded-lg p-4">
-        <form onSubmit={onSearch} className="flex gap-2 mb-3">
+        <div className="flex gap-2 mb-3">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
               value={q} 
               onChange={(e) => setQ(e.target.value)} 
-              placeholder="Quick search for a song..." 
+              placeholder="Start typing to search for a song..." 
               className="pl-10"
-              aria-label="Quick search query" 
+              aria-label="Auto-search query" 
             />
+            {loading && (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></div>
+              </div>
+            )}
           </div>
-          <Button 
-            type="submit" 
-            disabled={q.trim().length === 0 || loading} 
-            variant="gradient"
-            size="default"
-          >
-            {loading ? "Searching..." : "Search"}
-          </Button>
-        </form>
+        </div>
 
         {error && <p className="text-destructive text-sm mb-2">{error}</p>}
         
