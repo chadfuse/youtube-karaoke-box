@@ -44,23 +44,19 @@ useEffect(() => {
         // Defer Supabase calls to avoid deadlocks inside the callback
         setTimeout(async () => {
           try {
-            // Ensure profile exists; grant admin if email matches
-            if (em === 'admin@chado.app') {
-              await supabase
-                .from('profiles')
-                .upsert({ user_id: session.user.id, role: 'admin' } as any, { onConflict: 'user_id' });
-            } else {
-              await supabase
-                .from('profiles')
-                .upsert({ user_id: session.user.id } as any, { onConflict: 'user_id', ignoreDuplicates: true });
-            }
-
-            const { data } = await supabase
+            // Ensure profile exists
+            await supabase
               .from('profiles')
+              .upsert({ user_id: session.user.id } as any, { onConflict: 'user_id', ignoreDuplicates: true });
+
+            // Check admin status from user_roles table
+            const { data: userRoles } = await supabase
+              .from('user_roles')
               .select('role')
-              .eq('user_id', session.user.id)
-              .single();
-            setIsAdmin(data?.role === 'admin');
+              .eq('user_id', session.user.id);
+
+            const hasAdminRole = userRoles?.some(ur => ur.role === 'admin') || false;
+            setIsAdmin(hasAdminRole);
           } catch (e) {
             console.error('Profile check failed', e);
             setIsAdmin(false);
@@ -80,12 +76,14 @@ useEffect(() => {
       if (session?.user) {
         localStorage.setItem("karaoke_user_logged_in", "1");
         try {
-          const { data } = await supabase
-            .from('profiles')
+          // Check admin status from user_roles table
+          const { data: userRoles } = await supabase
+            .from('user_roles')
             .select('role')
-            .eq('user_id', session.user.id)
-            .single();
-          setIsAdmin(data?.role === 'admin');
+            .eq('user_id', session.user.id);
+
+          const hasAdminRole = userRoles?.some(ur => ur.role === 'admin') || false;
+          setIsAdmin(hasAdminRole);
         } catch (e) {
           console.error('Initial role check failed', e);
           setIsAdmin(false);

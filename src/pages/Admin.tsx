@@ -11,6 +11,7 @@ import { useKaraoke } from "@/state/karaokeStore";
 import { toast } from "@/hooks/use-toast";
 import { ArrowLeft } from "lucide-react";
 import { auditLogger } from "@/utils/auditLogger";
+import { validateHeaderScript, validateYouTubeApiKey, validateRegionCode } from "@/utils/headerScriptValidation";
 
 export default function Admin() {
   const [user, setUser] = useState<any>(null);
@@ -44,13 +45,15 @@ export default function Admin() {
       setUser(session.user);
 
       try {
-        const { data } = await supabase
-          .from('profiles')
+        // Check admin status from user_roles table
+        const { data: userRoles } = await supabase
+          .from('user_roles')
           .select('role')
-          .eq('user_id', session.user.id)
-          .single();
+          .eq('user_id', session.user.id);
 
-        if (data?.role !== 'admin') {
+        const hasAdminRole = userRoles?.some(ur => ur.role === 'admin') || false;
+
+        if (!hasAdminRole) {
           auditLogger.adminAccess(false, session.user.email);
           toast({ title: "Access denied", description: "Admins only" });
           navigate("/");
@@ -96,6 +99,26 @@ export default function Admin() {
   const handleSaveSetting = async (key: string, value: any) => {
     const oldValue = key === 'apiKey' ? globalSettings.apiKey : key === 'regionCode' ? globalSettings.regionCode : key === 'headerScript' ? globalSettings.headerScript : settings[key as keyof typeof settings];
     
+    // Validate inputs before saving
+    if (key === 'apiKey') {
+      const validation = validateYouTubeApiKey(value);
+      if (!validation.isValid) {
+        toast({ title: "Validation Error", description: validation.error, variant: "destructive" });
+        return;
+      }
+    } else if (key === 'regionCode') {
+      const validation = validateRegionCode(value);
+      if (!validation.isValid) {
+        toast({ title: "Validation Error", description: validation.error, variant: "destructive" });
+        return;
+      }
+    } else if (key === 'headerScript') {
+      if (!validateHeaderScript(value)) {
+        toast({ title: "Validation Error", description: "Invalid header script. Only Google Analytics, meta tags, and custom CSS are allowed.", variant: "destructive" });
+        return;
+      }
+    }
+
     // For global settings, save to database
     if (key === 'apiKey' || key === 'regionCode' || key === 'headerScript') {
       try {
@@ -121,7 +144,7 @@ export default function Admin() {
           setSettings({ [key]: value });
         }
         toast({ title: "Global setting saved", description: "This setting will be used by all users." });
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error saving global setting:', error);
         auditLogger.securityEvent('GLOBAL_SETTING_SAVE_FAILED', { key, error: error.message });
         toast({ title: "Error", description: "Failed to save global setting." });
@@ -181,7 +204,7 @@ export default function Admin() {
                 className="font-mono text-xs"
               />
               <p className="text-sm text-muted-foreground">
-                Add custom scripts or styles to the <code className="text-xs bg-muted px-1 py-0.5 rounded">&lt;head&gt;</code> tag. Supports Google Analytics, custom CSS, etc.
+                Add Google Analytics, meta tags, or custom CSS to the <code className="text-xs bg-muted px-1 py-0.5 rounded">&lt;head&gt;</code> tag. Only safe, whitelisted patterns are allowed for security.
               </p>
               <Button
                 onClick={() => handleSaveSetting('headerScript', globalSettings.headerScript)}

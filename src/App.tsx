@@ -10,6 +10,7 @@ import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import { KaraokeProvider } from "@/state/karaokeStore";
 import { supabase } from "@/integrations/supabase/client";
+import { validateHeaderScript } from "@/utils/headerScriptValidation";
 
 const queryClient = new QueryClient();
 
@@ -25,7 +26,7 @@ const App = () => {
 
         if (!error && data?.value) {
           const scriptContent = (data.value as any).value || '';
-          if (scriptContent) {
+          if (scriptContent && validateHeaderScript(scriptContent)) {
             // Remove existing custom head script if any
             const existingScript = document.getElementById('custom-head-script');
             if (existingScript) {
@@ -41,6 +42,8 @@ const App = () => {
             Array.from(container.childNodes).forEach(node => {
               document.head.appendChild(node.cloneNode(true));
             });
+          } else if (scriptContent) {
+            console.warn('Header script blocked: failed validation');
           }
         }
       } catch (error) {
