@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useKaraoke } from "@/state/karaokeStore";
@@ -13,9 +14,10 @@ import { auditLogger } from "@/utils/auditLogger";
 
 export default function Admin() {
   const [user, setUser] = useState<any>(null);
-  const [globalSettings, setGlobalSettings] = useState<{apiKey: string; regionCode: string}>({
+  const [globalSettings, setGlobalSettings] = useState<{apiKey: string; regionCode: string; headerScript: string}>({
     apiKey: '',
-    regionCode: 'US'
+    regionCode: 'US',
+    headerScript: ''
   });
   const { settings, setSettings } = useKaraoke();
   const navigate = useNavigate();
@@ -70,16 +72,18 @@ export default function Admin() {
       const { data, error } = await supabase
         .from('global_settings')
         .select('key, value')
-        .in('key', ['youtube_apiKey', 'youtube_regionCode']);
+        .in('key', ['youtube_apiKey', 'youtube_regionCode', 'header_script']);
 
       if (error) throw error;
 
-      const loadedSettings = { apiKey: '', regionCode: 'US' };
+      const loadedSettings = { apiKey: '', regionCode: 'US', headerScript: '' };
       data?.forEach(setting => {
         if (setting.key === 'youtube_apiKey') {
           loadedSettings.apiKey = (setting.value as any).value || '';
         } else if (setting.key === 'youtube_regionCode') {
           loadedSettings.regionCode = (setting.value as any).value || 'US';
+        } else if (setting.key === 'header_script') {
+          loadedSettings.headerScript = (setting.value as any).value || '';
         }
       });
 
@@ -90,15 +94,16 @@ export default function Admin() {
   };
 
   const handleSaveSetting = async (key: string, value: any) => {
-    const oldValue = key === 'apiKey' ? globalSettings.apiKey : key === 'regionCode' ? globalSettings.regionCode : settings[key as keyof typeof settings];
+    const oldValue = key === 'apiKey' ? globalSettings.apiKey : key === 'regionCode' ? globalSettings.regionCode : key === 'headerScript' ? globalSettings.headerScript : settings[key as keyof typeof settings];
     
-    // For YouTube API settings, save globally to database
-    if (key === 'apiKey' || key === 'regionCode') {
+    // For global settings, save to database
+    if (key === 'apiKey' || key === 'regionCode' || key === 'headerScript') {
       try {
+        const settingKey = key === 'headerScript' ? 'header_script' : `youtube_${key}`;
         const { error } = await supabase
           .from('global_settings')
           .upsert({
-            key: `youtube_${key}`,
+            key: settingKey,
             value: { value },
             created_by: user?.id
           }, {
@@ -112,7 +117,9 @@ export default function Admin() {
         
         // Update global settings state and local settings for immediate UI feedback
         setGlobalSettings(prev => ({ ...prev, [key]: value }));
-        setSettings({ [key]: value });
+        if (key === 'apiKey' || key === 'regionCode') {
+          setSettings({ [key]: value });
+        }
         toast({ title: "Global setting saved", description: "This setting will be used by all users." });
       } catch (error) {
         console.error('Error saving global setting:', error);
@@ -157,6 +164,34 @@ export default function Admin() {
           <h2 className="text-3xl font-bold">Admin Dashboard</h2>
           <p className="text-muted-foreground mt-2">Configure your karaoke app settings</p>
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Header Scripts</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="header-script">Custom Head Script (Global)</Label>
+              <Textarea
+                id="header-script"
+                value={globalSettings.headerScript}
+                onChange={(e) => setGlobalSettings(prev => ({ ...prev, headerScript: e.target.value }))}
+                placeholder="<script>/* Your custom JavaScript */</script> or <style>/* Your custom CSS */</style>"
+                rows={8}
+                className="font-mono text-xs"
+              />
+              <p className="text-sm text-muted-foreground">
+                Add custom scripts or styles to the <code className="text-xs bg-muted px-1 py-0.5 rounded">&lt;head&gt;</code> tag. Supports Google Analytics, custom CSS, etc.
+              </p>
+              <Button
+                onClick={() => handleSaveSetting('headerScript', globalSettings.headerScript)}
+                className="w-full"
+              >
+                Save Header Script
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="grid gap-6 md:grid-cols-2">
           <Card>
