@@ -8,11 +8,11 @@ const MAX_SCRIPT_LENGTH = 10000;
 
 // Allowed patterns for header scripts
 const ALLOWED_PATTERNS = [
-  // Google Analytics gtag.js
-  /^<script\s+src="https:\/\/www\.googletagmanager\.com\/gtag\/js\?id=[A-Z0-9-]+"><\/script>$/,
+  // Google Analytics gtag.js (with optional async attribute)
+  /^<script(\s+async)?\s+src="https:\/\/www\.googletagmanager\.com\/gtag\/js\?id=[A-Z0-9-]+"><\/script>$/,
   
   // Google Analytics inline config (multi-line with proper escaping)
-  /^<script>\s*window\.dataLayer\s*=\s*window\.dataLayer\s*\|\|\s*\[\];\s*function\s+gtag\(\)\s*{\s*dataLayer\.push\(arguments\);\s*}\s*gtag\('js',\s*new\s+Date\(\)\);\s*gtag\('config',\s*'[A-Z0-9-]+'\);\s*<\/script>$/s,
+  /^<script>\s*window\.dataLayer\s*=\s*window\.dataLayer\s*\|\|\s*\[\];\s*function\s+gtag\(\)\s*\{\s*dataLayer\.push\(arguments\);\s*\}\s*gtag\('js',\s*new\s+Date\(\)\);\s*gtag\('config',\s*'[A-Z0-9-]+'\);\s*<\/script>$/s,
   
   // Custom CSS only (no script tags or event handlers)
   /^<style>[^<]*<\/style>$/,
