@@ -49,14 +49,9 @@ useEffect(() => {
               .from('profiles')
               .upsert({ user_id: session.user.id } as any, { onConflict: 'user_id', ignoreDuplicates: true });
 
-            // Check admin status from user_roles table
-            const { data: userRoles } = await supabase
-              .from('user_roles')
-              .select('role')
-              .eq('user_id', session.user.id);
-
-            const hasAdminRole = userRoles?.some(ur => ur.role === 'admin') || false;
-            setIsAdmin(hasAdminRole);
+            // Check admin status using RPC to avoid RLS issues
+            const { data: isAdminRpc } = await supabase.rpc('is_admin', { user_id_param: session.user.id });
+            setIsAdmin(Boolean(isAdminRpc));
           } catch (e) {
             console.error('Profile check failed', e);
             setIsAdmin(false);
@@ -76,14 +71,9 @@ useEffect(() => {
       if (session?.user) {
         localStorage.setItem("karaoke_user_logged_in", "1");
         try {
-          // Check admin status from user_roles table
-          const { data: userRoles } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', session.user.id);
-
-          const hasAdminRole = userRoles?.some(ur => ur.role === 'admin') || false;
-          setIsAdmin(hasAdminRole);
+          // Check admin status using RPC to avoid RLS issues
+          const { data: isAdminRpc } = await supabase.rpc('is_admin', { user_id_param: session.user.id });
+          setIsAdmin(Boolean(isAdminRpc));
         } catch (e) {
           console.error('Initial role check failed', e);
           setIsAdmin(false);

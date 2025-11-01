@@ -45,22 +45,19 @@ export default function Admin() {
       setUser(session.user);
 
       try {
-        // Check admin status from user_roles table
-        const { data: userRoles } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', session.user.id);
-
-        const hasAdminRole = userRoles?.some(ur => ur.role === 'admin') || false;
+        // Check admin status using security-definer function to avoid RLS pitfalls
+        const { data: isAdminRpc, error: adminErr } = await supabase.rpc('is_admin', { user_id_param: session.user.id });
+        const hasAdminRole = Boolean(isAdminRpc) && !adminErr;
 
         if (!hasAdminRole) {
           auditLogger.adminAccess(false, session.user.email);
           toast({ title: "Access denied", description: "Admins only" });
           navigate("/");
-        } else {
-          auditLogger.adminAccess(true, session.user.email);
-          await loadGlobalSettings();
+          return;
         }
+
+        auditLogger.adminAccess(true, session.user.email);
+        await loadGlobalSettings();
       } catch (e) {
         console.error('Admin check failed', e);
         auditLogger.adminAccess(false, session.user.email);
