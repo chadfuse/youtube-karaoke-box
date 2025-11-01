@@ -34,13 +34,16 @@ export const validateHeaderScript = (content: string): boolean => {
     return false;
   }
 
+  // Strip HTML comments to allow GA snippets with comments
+  const withoutComments = content.replace(/<!--[\s\S]*?-->/g, '');
+
   // Empty content is allowed
-  if (!content.trim()) {
+  if (!withoutComments.trim()) {
     return true;
   }
 
   // Split into individual tags and validate each
-  const tags = content
+  const tags = withoutComments
     .trim()
     .split(/(?=<)(?!<\/)/) // Split on opening tags but not closing tags
     .filter(tag => tag.trim());
