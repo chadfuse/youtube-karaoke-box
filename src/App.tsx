@@ -27,20 +27,47 @@ const App = () => {
         if (!error && data?.value) {
           const scriptContent = (data.value as any).value || '';
           if (scriptContent && validateHeaderScript(scriptContent)) {
-            // Remove existing custom head script if any
-            const existingScript = document.getElementById('custom-head-script');
-            if (existingScript) {
-              existingScript.remove();
-            }
+            // Remove any previously injected custom head nodes
+            document.querySelectorAll('[data-custom-head="true"]').forEach(n => n.remove());
 
-            // Create a container div for the custom scripts
-            const container = document.createElement('div');
-            container.id = 'custom-head-script';
-            container.innerHTML = scriptContent;
+            // Parse provided markup and inject elements properly so scripts execute
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = scriptContent;
 
-            // Append all child nodes to head
-            Array.from(container.childNodes).forEach(node => {
-              document.head.appendChild(node.cloneNode(true));
+            Array.from(wrapper.childNodes).forEach(node => {
+              if (node.nodeType !== Node.ELEMENT_NODE) return;
+              const el = node as HTMLElement;
+              const tag = el.tagName.toLowerCase();
+
+              if (tag === 'script') {
+                const scriptEl = document.createElement('script');
+                Array.from(el.attributes).forEach(attr => scriptEl.setAttribute(attr.name, attr.value));
+                scriptEl.setAttribute('data-custom-head', 'true');
+                if (!scriptEl.getAttribute('src') && el.textContent) {
+                  scriptEl.text = el.textContent;
+                }
+                document.head.appendChild(scriptEl);
+              } else if (tag === 'link') {
+                const linkEl = document.createElement('link');
+                Array.from(el.attributes).forEach(attr => linkEl.setAttribute(attr.name, attr.value));
+                linkEl.setAttribute('data-custom-head', 'true');
+                document.head.appendChild(linkEl);
+              } else if (tag === 'meta') {
+                const metaEl = document.createElement('meta');
+                Array.from(el.attributes).forEach(attr => metaEl.setAttribute(attr.name, attr.value));
+                metaEl.setAttribute('data-custom-head', 'true');
+                document.head.appendChild(metaEl);
+              } else if (tag === 'style') {
+                const styleEl = document.createElement('style');
+                styleEl.setAttribute('data-custom-head', 'true');
+                styleEl.textContent = el.textContent || '';
+                document.head.appendChild(styleEl);
+              } else if (tag === 'noscript') {
+                const nosEl = document.createElement('noscript');
+                nosEl.setAttribute('data-custom-head', 'true');
+                nosEl.innerHTML = el.innerHTML;
+                document.body.appendChild(nosEl);
+              }
             });
           } else if (scriptContent) {
             console.warn('Header script blocked: failed validation');
